@@ -11,7 +11,6 @@
 # ********NEED TO ADD DOCSTRINGS******************
 #
 # ------------------------------------------------------------------------
-# Import statements here
 
 from trackerStrings import intro
 from trackerClasses import *
@@ -42,17 +41,21 @@ def getValidName(prompt):
 
 
 def addGroup(groupsList, userList):
-    name = getValidName("\nPlease enter the expense group name: ")
-    existingGroupNames = [group.name for group in groupsList]
-    while name in existingGroupNames:
-        print("That group name is already in use.")
-        name = getValidName("Please choose a new name: ")
-    newGroup = ExpenseGroup(name)
-    addGroupMembers(newGroup, userList)
-    groupsList.append(newGroup)
-    print("The following expense group was created:")
-    print("  " + str(newGroup))
-    return newGroup
+    completed = False
+    while not completed:
+        name = getValidName("\nPlease enter the expense group name: ")
+        existingGroupNames = [group.name for group in groupsList]
+        while name in existingGroupNames:
+            print("That group name is already in use.")
+            name = getValidName("Please choose a new name: ")
+        newGroup = ExpenseGroup(name, groupsList, userList)
+        if newGroup in groupsList:
+            return newGroup
+        else:
+            if not groupsList:
+                print("You must create a group to start tracking expenses. Please create an expense group.")
+            else:
+                completed = True
 
 def showAllGroups(groupList):
     print("\nExisting expense groups:")
@@ -77,6 +80,7 @@ def chooseFunction(functions):
     trackerOptions = "\nWhat would you like to do? Please enter a number from the following options:\n"
     for i in range(len(functions)):
         trackerOptions += f"{i+1}. {functions[i]}\n"
+    trackerOptions += "Response: "
 
     while invalid:
         try:
@@ -89,40 +93,6 @@ def chooseFunction(functions):
             print("Invalid choice. Please enter a number.\n")
 
     return functions[userChoice]
-
-def addGroupMembers(expenseGroup, userList):
-    groupMemberList = expenseGroup.members
-    newMembers = input("Please enter group members, separated by commas: ")
-    parsedNames = [name.strip() for name in newMembers.split(',')]
-    existingMemberNames = [member.name for member in groupMemberList]
-    newMemberNames = []
-    duplicates = []
-    newUserNames = []
-    for name in parsedNames:
-        if name:
-            if name not in existingMemberNames and name not in newMemberNames:
-                newMemberNames.append(name)
-            else:
-                duplicates.append(name)
-    if duplicates:
-        print("The following users are already in this group and will not be added:")
-        for duplicate in duplicates:
-            print(f"  {duplicate}")
-    for name in newMemberNames:
-        existingUser = False
-        for user in userList:
-            if user.name == name:
-                groupMemberList.append(user)
-                existingUser = True
-        if not existingUser:
-            newUser = User(name)
-            userList.append(newUser)
-            groupMemberList.append(newUser)
-            newUserNames.append(name)
-    if newUserNames:
-        print("The following users were not yet in the system and were added:")
-        for name in newUserNames:
-            print(f"  {name}")
 
 #def addExpense():
 
@@ -151,18 +121,22 @@ def main():
     while running:
         if not groups:
             print("You do not have any expense groups. Please create one to start tracking expenses.")
-            currentGroup = addGroup(groups, allUsers)
+            getGroup = addGroup(groups, allUsers)
+            if getGroup != None:
+                currentGroup = getGroup
 
         else:
             showAllGroups(groups)
             invalid = True
             while invalid:
-                option = input("\nWhat would you like to do:\n1. Choose existing group.\n2. Create a new group.\n")
+                option = input("\nWhat would you like to do:\n1. Choose existing group.\n2. Create a new group.\nResponse: ")
                 if option == "1":
                     currentGroup = chooseGroup(groups)
                     invalid = False
                 elif option == "2":
-                    currentGroup = addGroup(groups, allUsers)
+                    newGroup = addGroup(groups, allUsers)
+                    if newGroup:
+                        currentGroup = newGroup
                     showAllGroups(groups)
                 else:
                     print("Invalid choice. Please type the number of one of the options.")
@@ -173,7 +147,7 @@ def main():
             choice = chooseFunction(TRACKER_FUNCTIONS)
             if choice == "Add group member(s).":
                 print("")
-                addGroupMembers(currentGroup, allUsers)
+                currentGroup.addGroupMembers(allUsers)
                 print("The following expense group has been updated:")
                 print("  " + str(currentGroup))
             elif choice == "Add an expense.":
