@@ -47,8 +47,16 @@ def getValidDate(prompt):
             print("Date not properly Formated. ", end="")
     return date.strftime("%m/%d/%Y")
 
-#def getValidDollarAmt():
-
+def getValidDollarAmt(prompt):
+    invalid = True
+    while invalid:
+        amount = input(prompt).lstrip(" 0$").rstrip().replace(',', '')
+        try:
+            amount = float(amount)
+            invalid = False
+        except ValueError:
+            print("Invalid characters entered. ", end="")
+    return round(amount, 2)
 
 def addGroup(groupsList, userList):
     completed = False
