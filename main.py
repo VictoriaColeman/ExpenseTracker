@@ -63,7 +63,7 @@ def addGroup(groupsList, userList):
     while not completed:
         name = getValidName("\nPlease enter the expense group name: ")
         existingGroupNames = [group.name for group in groupsList]
-        while name in existingGroupNames:
+        while name.lower() in existingGroupNames:
             print("That group name is already in use.")
             name = getValidName("Please choose a new name: ")
         newGroup = ExpenseGroup(name, groupsList, userList)
@@ -89,7 +89,7 @@ def chooseGroup(groupList):
     while invalid:
         choice = input("\nWhich expense group would you like to work with?: ").lower()
         for group in groupList:
-            if group.name.lower() == choice:
+            if group.name == choice:
                 return group
         print("Sorry, that group name does not exist.")
 
@@ -112,13 +112,26 @@ def chooseFunction(functions):
 
     return functions[userChoice]
 
-#def addExpense():
+def addExpense(expenseGroup, userList):
+    print("")
+    date = getValidDate("Please enter the expense date (MM/DD/YYY): ")
+    name = getValidName("Please enter the expense description: ")
+    amount = getValidDollarAmt("Please enter the expense amount: ")
+    payerName = getValidName("Who paid?: ")
+    payer = expenseGroup.checkForExistingMember(payerName, userList)
+    newExpense = Expense(date, name, amount, payer, expenseGroup, userList)
+    print("The following expense was created:")
+    print("  " + str(newExpense))
 
-#def printExpenses():
+def printExpenses(expenseGroup):
+    print(f"\nDisplaying all expenses for: {expenseGroup.name.title()}")
+    for expense in expenseGroup.expenses:
+        print("  " + str(expense))
 
-# 1. Add an expense
-
-# 2. Print report of all expenses
+def printBalances(expenseGroup):
+    print(f"\nDisplaying all balances for: {expenseGroup.name.title()}")
+    for debt in expenseGroup.debts:
+        print("  " + str(debt))
 
 # 3. Show all balances
 
@@ -169,13 +182,13 @@ def main():
                 print("The following expense group has been updated:")
                 print("  " + str(currentGroup))
             elif choice == "Add an expense.":
-                addExpense()
+                addExpense(currentGroup, allUsers)
             elif choice == "Print a report of all expenses.":
-                printExpenses()
+                printExpenses(currentGroup)
             elif choice == "Show all balances":
-                printBalances()
+                printBalances(currentGroup)
             elif choice == "Record a payment.":
-                recordPayment()
+                currentGroup.recordPayment()
             elif choice == "See all groups.":
                 groupChosen = False
             elif choice == "Exit.":
