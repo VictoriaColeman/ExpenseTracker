@@ -14,6 +14,7 @@
 
 from trackerStrings import intro
 from trackerClasses import *
+from datetime import datetime
 
 TRACKER_FUNCTIONS = ("Add group member(s).", "Add an expense.", "Print a report of all expenses.", "Show all balances", "Record a payment.", "See all groups.", "Exit.")
 
@@ -35,7 +36,16 @@ def getValidName(prompt):
         response = input("Name cannot be blank. " + prompt)
     return response
 
-#def getValidDate():
+def getValidDate(prompt):
+    invalid = True
+    while invalid:
+        date = input(prompt)
+        try:
+            date = datetime.strptime(date, "%m/%d/%Y")
+            invalid = False
+        except ValueError:
+            print("Date not properly Formated. ", end="")
+    return date.strftime("%m/%d/%Y")
 
 #def getValidDollarAmt():
 
