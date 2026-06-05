@@ -8,7 +8,6 @@
 #  Author: Victoria Coleman
 #  Created: May 30, 2026
 #
-# ********NEED TO ADD DOCSTRINGS******************
 #
 # ------------------------------------------------------------------------
 
@@ -133,11 +132,6 @@ def printBalances(expenseGroup):
     for debt in expenseGroup.debts:
         print("  " + str(debt))
 
-# 3. Show all balances
-
-# 4. Record a payment
-
-# Check for existing participant and add one if they don't exist
 
 
 def main():

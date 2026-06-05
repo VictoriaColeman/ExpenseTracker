@@ -1,5 +1,4 @@
 from main import getYesNoAnswer, getValidDate, getValidDollarAmt
-from datetime import datetime
 
 class ExpenseGroup:
     def __init__(self, name, groupsList, userList):
@@ -124,6 +123,7 @@ class Expense:
         self.participants = self.getParticipants(expenseGroup, userList)
         expenseGroup.expenses.append(self)
         self.createDebts(expenseGroup)
+        self.cancelDebts(expenseGroup)
 
     def __str__(self):
         participants = [participant.name.title() for participant in self.participants]
@@ -152,6 +152,29 @@ class Expense:
                 if newBalance:
                     Debt(self.payer, participant, share, expenseGroup)
 
+    def cancelDebts(self, expenseGroup):
+        cancelDebts = []
+        alterDebts = []
+        for outerDebt in expenseGroup.debts:
+            debtor = outerDebt.debtor
+            creditor = outerDebt.creditor
+            for innerDebt in expenseGroup.debts:
+                if debtor == innerDebt.creditor and creditor == innerDebt.debtor and innerDebt not in cancelDebts and outerDebt not in cancelDebts:
+                    if outerDebt.amount > innerDebt.amount:
+                        cancelDebts.append(innerDebt)
+                        alterDebts.append((outerDebt, innerDebt.amount))
+                    elif innerDebt.amount > outerDebt.amount:
+                        cancelDebts.append(outerDebt)
+                        alterDebts.append((innerDebt, outerDebt.amount))
+                    else:
+                        cancelDebts += [innerDebt, outerDebt]
+        for debt in cancelDebts:
+            expenseGroup.debts.remove(debt)
+        for pair in alterDebts:
+            debt = pair[0]
+            amt = pair[1]
+            debt.amount -= amt
+
 
 class Debt:
     def __init__(self, creditor, debtor, amount, expenseGroup):
@@ -161,7 +184,7 @@ class Debt:
         expenseGroup.debts.append(self)
 
     def __str__(self):
-        return f"{self.debtor} owes {self.creditor} ${self.amount}."
+        return f"{self.debtor} owes {self.creditor} ${round(self.amount, 2)}."
 
     def addDebt(self, amount):
         if amount > 0:
