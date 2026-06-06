@@ -1,8 +1,5 @@
 from datetime import datetime
 
-allUsers = []
-groups = []
-
 # ---------------------------Data Validation---------------------------
 
 def getYesNoAnswer(prompt):
@@ -61,10 +58,14 @@ def getValidDollarAmt(prompt):
     """
     invalid = True
     while invalid:
-        amount = input(prompt).lstrip(" 0$").rstrip().replace(',', '')
+        amount = input(prompt).lstrip(" $").replace(',', '')
         try:
             amount = float(amount)
-            invalid = False
+            if amount > 0:
+                invalid = False
+            else:
+                print("Invalid response. Amount must be a positive "
+                      "value. ", end="")
         except ValueError:
             print("Invalid characters entered. ", end="")
     return round(amount, 2)
@@ -72,8 +73,11 @@ def getValidDollarAmt(prompt):
 # -----------------------Expense Group Management----------------------
 
 class Tracker:
+    """
+    Tracker class is the main class for the expense tracker. A
+    tracker object has ExpenseGroup objects.
+    """
     def __init__(self):
-        self.users = []
         self.groups = []
         print("You do not have any expense groups. Please create "
               "one to start tracking expenses.")
@@ -96,7 +100,9 @@ class Tracker:
                 invalid = False
             else:
                 print("That group name is already in use.")
-        self.currentGroup = ExpenseGroup(name)
+        newGroup = ExpenseGroup(name)
+        self.groups.append(newGroup)
+        self.currentGroup = newGroup
 
     def showAllGroups(self):
         """
@@ -104,7 +110,7 @@ class Tracker:
         :return: None
         """
         print("\nExisting expense groups:")
-        for group in groups:
+        for group in self.groups:
             print("  " + str(group))
 
     def chooseGroup(self):
@@ -124,9 +130,11 @@ class Tracker:
             if invalid:
                 print("Sorry, that group name does not exist.")
 
-
-
 class ExpenseGroup:
+    """
+    ExpenseGroup objects belong to Tracker objects and have Expense,
+    Debt, Payment, and User objects.
+    """
     def __init__(self, name):
         self.name = name.lower()
         self.members = []
@@ -134,13 +142,8 @@ class ExpenseGroup:
         self.debts = []
         self.payments = []
         self.addGroupMembers()
-        if not self.members:
-            print("You did not add any group members. The expense group"
-                  " was not created.")
-        else:
-            groups.append(self)
-            print("The following expense group was created:")
-            print("  " + str(self))
+        print("The following expense group was created:")
+        print("  " + str(self))
 
     def __str__(self):
         memberNames = [user.name.title() for user in self.members]
@@ -150,23 +153,28 @@ class ExpenseGroup:
     def showCurrentGroup(self):
         """
         Prints the expense group the user is currently working with,
-        witha header.
+        with a header.
         :return: None
         """
         print("\nYou are working with the following expense group:")
         print("  " + str(self))
 
     def addGroupMembers(self):
-        newMembers = input("\nPlease enter group members, separated by "
+        """
+        Prompts user to enter names of group members to add to an
+        expense group. Validates that the user(s) are not already in
+        the group.
+        :return: None
+        """
+        newMembers = input("Please enter group members, separated by "
                            "commas: ")
         parsedNames = [name.strip().lower() for name
                        in newMembers.split(',')]
         currentMemberNames = [member.name for member in self.members]
         newMemberNames = []
         duplicates = []
-        newUserNames = []
         for name in parsedNames:
-            if name:
+            if name: # Skip empty entries
                 if (name not in currentMemberNames
                         and name not in newMemberNames):
                     newMemberNames.append(name)
@@ -178,47 +186,35 @@ class ExpenseGroup:
             for duplicate in duplicates:
                 print(f"  {duplicate.title()}")
         for name in newMemberNames:
-            existingUser = False
-            for user in allUsers:
-                if user.name == name:
-                    self.members.append(user)
-                    existingUser = True
-            if not existingUser:
-                newUser = User(name, allUsers)
-                self.members.append(newUser)
-                newUserNames.append(name)
-        if newUserNames:
-            print("The following users were not yet in the system and "
-                  "were added:")
-            for name in newUserNames:
-                print(f"  {name.title()}")
-        print("The following expense group has been updated:")
-        print("  " + str(self))
+            self.members.append(User(name))
 
-    def checkForExistingMember(self, name, userList):
+    def checkForExistingMember(self, name):
         existingGroupMember = False
-        existingUser = False
         for member in self.members:
             if member.name == name.lower():
-                person = member
+                user = member
                 existingGroupMember = True
-        if not existingGroupMember:
+        if existingGroupMember:
+            return user
+        else:
             addMember = getYesNoAnswer(f"{name.title()} is not a member"
                                        f" in this expense group. Would "
                                        f"you like to add them? (Y/N): ")
-            if not addMember:
-                return False
-            for user in userList:
-                if user.name == name.lower():
-                    self.members.append(user)
-                    person = user
-                    existingUser = True
-            if not existingUser:
-                person = User(name, userList)
-                self.members.append(person)
-        return person
+            if addMember:
+                newUser = User(name)
+                self.members.append(newUser)
+                return newUser
+            else:
+                return None
 
     def getExistingMember(self, prompt):
+        """
+        Will prompt the user to enter the name of an existing group
+        member. Will continue to prompt until an existing group
+        member is chosen.
+        :param prompt: string to prompt user
+        :return: User object
+        """
         existingMember = False
         while not existingMember:
             user = input(prompt).lower()
@@ -231,33 +227,31 @@ class ExpenseGroup:
                       "choose an existing member.")
         return user
 
-    def addExpense(self, userList):
+    def addExpense(self):
         """
         Allows user to enter an expense. Prompts user to enter a valid
         date, non-empty string name, and enter a valid dollar amount.
         Will prompt user to enter the user who paid and validate that
         they are a member of the expense group or that the user wants to
-        add them to the group. Creating the Expense object will add
-        the Expense to the ExpenseGroup and prompt user to enter
-        participants. Will print a string confirming that the expense was
-        created.
-        :param userList: list of User objects, list of all existing users
+        add them to the group. Adds expense to expense group's
+        expense list. Creating the Expense object will prompt user to
+        enter participants. Will print a string confirming that the
+        expense was created.
         :return: None
         """
         date = getValidDate("\nPlease enter the expense date ("
                             "MM/DD/YYY): ")
         name = getValidName("Please enter the expense description: ")
         amount = getValidDollarAmt("Please enter the expense amount: ")
-        payer = False
-        while not payer:
+        payer = None
+        while payer is None:
             payerName = getValidName("Who paid?: ")
-            payer = self.checkForExistingMember(payerName,
-                                                        userList)
-            if not payer:
+            payer = self.checkForExistingMember(payerName)
+            if payer is None:
                 print("User must be in the expense group to pay for an "
                       "expense. Please try again.")
-        newExpense = Expense(date, name, amount, payer, self,
-                             userList)
+        newExpense = Expense(date, name, amount, payer, self)
+        self.expenses.append(newExpense)
         print("The following expense was created:")
         print("  " + str(newExpense))
 
@@ -267,10 +261,19 @@ class ExpenseGroup:
         with a header.
         :return: None
         """
-        print(
-            f"\nDisplaying all expenses for: {self.name.title()}")
+        print(f"\nDisplaying all expenses for: {self.name.title()}")
         for expense in self.expenses:
             print("  " + str(expense))
+
+    def printPayments(self):
+        """
+        Prints a list of all existing payments for the expense group
+        with a header.
+        :return: None
+        """
+        print(f"\nDisplaying all payments for: {self.name.title()}")
+        for payment in self.payments:
+            print("  " + str(payment))
 
     def printBalances(self):
         """
@@ -283,6 +286,13 @@ class ExpenseGroup:
             print("  " + str(debt))
 
     def recordPayment(self):
+        """
+        Prompts the user to enter a payment. Validates that the payer
+        owes the payee and that the amount paid is not greater than the
+        amount owed. If payment reduces a balance to zero,
+        the balance is removed from the expense group debts.
+        :return: None
+        """
         date = getValidDate("\nPayment date (MM/DD/YYYY): ")
         payer = self.getExistingMember("Who made the payment?: ")
         payee = self.getExistingMember("Who received the payment?: ")
@@ -320,15 +330,17 @@ class ExpenseGroup:
                   f"  {newPayment}")
 
 class Expense:
-    def __init__(self, date, name, amount, payer, expenseGroup,
-                 userList):
+    """
+    Expense objects belong to an ExpenseGroup object and have User
+    objects. Creation of an Expense generates and updates Debt objects
+    that belong to the ExpenseGroup object
+    """
+    def __init__(self, date, name, amount, payer, expenseGroup):
         self.date = date
         self.name = name
         self.amount = amount
         self.payer = payer
-        self.participants = self.getParticipants(expenseGroup,
-                                                 userList)
-        expenseGroup.expenses.append(self)
+        self.participants = self.getParticipants(expenseGroup)
         self.createDebts(expenseGroup)
         self.cancelDebts(expenseGroup)
 
@@ -339,7 +351,16 @@ class Expense:
                 f" {self.name}. Expense split by:"
                 f" {", ".join(participants)}")
 
-    def getParticipants(self, expenseGroup, userList):
+    def getParticipants(self, expenseGroup):
+        """
+        Prompts user to enter a list of participants who will split
+        the expense. Checks whether participants exist in the expense
+        group. Prompts user to add them if they are not members of the
+        group.
+        :param expenseGroup: ExpenseGroup object where expense will be '
+            recorded
+        :return: list of user objects, participants in the expense
+        """
         response = input("Please enter all participants who should "
                          "split the expense separated by commas "
                          "(including payer if applicable): ")
@@ -347,12 +368,20 @@ class Expense:
                        response.split(',')]
         participants = []
         for name in parsedNames:
-            user = expenseGroup.checkForExistingMember(name, userList)
+            user = expenseGroup.checkForExistingMember(name)
             if user and user not in participants:
                 participants.append(user)
         return participants
 
     def createDebts(self, expenseGroup):
+        """
+        Creates Debt ojects which are added to an expense group when
+        an expense is created or updates existing debts. Splits
+        expenses equally between participants.
+        :param expenseGroup: ExpenseGroup object where the debts will be
+            added/updated
+        :return: None
+        """
         share = self.amount/len(self.participants)
         share = round(share, 2)
         for participant in self.participants:
@@ -361,12 +390,18 @@ class Expense:
                 for debt in expenseGroup.debts:
                     if (debt.creditor == self.payer
                             and debt.debtor == participant):
-                        debt.addDebt(share)
+                        debt.amount += share
                         newBalance = False
                 if newBalance:
                     Debt(self.payer, participant, share, expenseGroup)
 
     def cancelDebts(self, expenseGroup):
+        """
+        Looks for pairs of debts where debtor and creditor are
+        reversed and cancels out redundant debt between two users.
+        :param expenseGroup: ExpenseGroup object with debts to cancel
+        :return: None
+        """
         cancelDebts = []
         alterDebts = []
         for outerDebt in expenseGroup.debts:
@@ -393,6 +428,9 @@ class Expense:
             debt.amount -= amt
 
 class Debt:
+    """
+    Debt objects belong to ExpenseGroup objects and have User objects.
+    """
     def __init__(self, creditor, debtor, amount, expenseGroup):
         self.creditor = creditor
         self.debtor = debtor
@@ -403,11 +441,11 @@ class Debt:
         return (f"{self.debtor} owes {self.creditor} "
                 f"${round(self.amount, 2)}.")
 
-    def addDebt(self, amount):
-        if amount > 0:
-            self.amount += amount
-
 class Payment:
+    """
+    Payment objects belong to ExpenseGroup objects and have User
+    objects.
+    """
     def __init__(self, date, payer, payee, amount, expenseGroup):
         self.date = date
         self.payer = payer
@@ -420,9 +458,12 @@ class Payment:
                 f"${self.amount}.")
 
 class User:
-    def __init__(self, name, userList):
+    """
+    User objects belong to Debt, Payment, Expense, and ExpenseGroup
+    objects.
+    """
+    def __init__(self, name):
         self.name = name.lower()
-        userList.append(self)
 
     def __str__(self):
         return f"{self.name.title()}"

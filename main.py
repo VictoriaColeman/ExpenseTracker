@@ -14,10 +14,10 @@
 from trackerStrings import intro
 from trackerClasses import Tracker
 
-TRACKER_FUNCTIONS = ("Add group member(s).", "Add an expense.",
-                     "Print a report of all expenses.",
-                     "Show all balances", "Record a payment.",
-                     "See all groups.", "Exit.")
+TRACKER_FUNCTIONS = ("Add an expense.", "Record a payment.",
+                     "Show all expenses.", "Show all payments.",
+                     "Show all balances.", "Add group member(s).",
+                     "See all expense groups.", "Exit.")
 
 def chooseFunction(functions):
     """
@@ -38,13 +38,13 @@ def chooseFunction(functions):
 
     while invalid:
         try:
-            userChoice = int(input(trackerOptions)) - 1
+            userChoice = int(input(trackerOptions).strip(" #.")) - 1
             if userChoice in range(len(functions)):
                 invalid = False
             else:
-                print("Invalid choice. Please try again.\n")
+                print("Invalid choice. Please try again.")
         except ValueError:
-            print("Invalid choice. Please enter a number.\n")
+            print("Invalid choice. Please enter a number.")
 
     return functions[userChoice]
 
@@ -72,7 +72,7 @@ def main():
                            "\nResponse: ").strip(" .#")
 
             if option == "1":
-                t.currentGroup = t.chooseGroup()
+                t.chooseGroup()
                 invalid = False
             elif option == "2":
                 t.addGroup()
@@ -81,50 +81,50 @@ def main():
                 print("Invalid choice. Please type the number of "
                       "one of the options.")
 
-        # Will occur when user chooses "Show all groups"
-        else:
-            showAllGroups()
-            invalid = True
-            while invalid:
-
-
-        # After creating first group or choosing a group to work
-        # with, display current group.
-        currentGroup.showCurrentGroup()
+        # Once user has created or chosen a group to work with,
+        # displays the active expense group.
+        t.currentGroup.showCurrentGroup()
 
         # Loop will continue to ask user what function they would
-        # like to perform unless they choose "Show all groups" or
-        # "Exit."
+        # like to perform with the active expense group unless they
+        # choose "Show all groups" or "Exit."
         groupChosen = True
         while groupChosen:
             choice = chooseFunction(TRACKER_FUNCTIONS)
 
-            # "Add group member(s)."
-            if choice == TRACKER_FUNCTIONS[0]:
-                currentGroup.addGroupMembers()
-
             # "Add an expense."
-            elif choice == TRACKER_FUNCTIONS[1]:
-                currentGroup.addExpense()
-
-            # "Print a report of all expenses."
-            elif choice == TRACKER_FUNCTIONS[2]:
-                currentGroup.printExpenses()
-
-            # "Show all balances"
-            elif choice == TRACKER_FUNCTIONS[3]:
-                currentGroup.printBalances()
+            if choice == TRACKER_FUNCTIONS[0]:
+                t.currentGroup.addExpense()
 
             # "Record a payment."
-            elif choice == TRACKER_FUNCTIONS[4]:
-                currentGroup.recordPayment()
+            elif choice == TRACKER_FUNCTIONS[1]:
+                t.currentGroup.recordPayment()
 
-            # "See all groups."
+            # "Show all expenses."
+            elif choice == TRACKER_FUNCTIONS[2]:
+                t.currentGroup.printExpenses()
+
+            # "Show all payments."
+            elif choice == TRACKER_FUNCTIONS[3]:
+                t.currentGroup.printPayments()
+
+            # "Show all balances"
+            elif choice == TRACKER_FUNCTIONS[4]:
+                t.currentGroup.printBalances()
+
+            # "Add group member(s)."
             elif choice == TRACKER_FUNCTIONS[5]:
+                print("")
+                t.currentGroup.addGroupMembers()
+                print("The following expense group has been updated:")
+                print("  " + str(t.currentGroup))
+
+            # "See all expense groups."
+            elif choice == TRACKER_FUNCTIONS[6]:
                 groupChosen = False
 
             # "Exit."
-            elif choice == TRACKER_FUNCTIONS[6]:
+            elif choice == TRACKER_FUNCTIONS[7]:
                 groupChosen = False
                 running = False
 
