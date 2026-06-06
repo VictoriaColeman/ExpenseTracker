@@ -1,100 +1,37 @@
-# ------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 #
 #  Program: Expense Tracker
 #
-#  Description: This program allows you to record shared expenses and calculate
-#           each participants balances.
+#  Description: This program allows you to create expense groups,
+#           record shared expenses and payments, and calculates each
+#           participant's balances.
 #
 #  Author: Victoria Coleman
 #  Created: May 30, 2026
 #
-#
-# ------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 from trackerStrings import intro
-from trackerClasses import *
-from datetime import datetime
+from trackerClasses import Tracker
 
-TRACKER_FUNCTIONS = ("Add group member(s).", "Add an expense.", "Print a report of all expenses.", "Show all balances", "Record a payment.", "See all groups.", "Exit.")
-
-def getYesNoAnswer(prompt):
-    #returns True if yes, False if no
-    invalid = True
-    while invalid:
-        response = input(prompt).lower()
-        if "y" in response:
-            return True
-        elif "n" in response:
-            return False
-        else:
-            print("Invalid response. Please enter Y or N.")
-
-def getValidName(prompt):
-    response = input(prompt)
-    while not response:
-        response = input("Name cannot be blank. " + prompt)
-    return response
-
-def getValidDate(prompt):
-    invalid = True
-    while invalid:
-        date = input(prompt)
-        try:
-            date = datetime.strptime(date, "%m/%d/%Y")
-            invalid = False
-        except ValueError:
-            print("Date not properly Formated. ", end="")
-    return date.strftime("%m/%d/%Y")
-
-def getValidDollarAmt(prompt):
-    invalid = True
-    while invalid:
-        amount = input(prompt).lstrip(" 0$").rstrip().replace(',', '')
-        try:
-            amount = float(amount)
-            invalid = False
-        except ValueError:
-            print("Invalid characters entered. ", end="")
-    return round(amount, 2)
-
-def addGroup(groupsList, userList):
-    completed = False
-    while not completed:
-        name = getValidName("\nPlease enter the expense group name: ")
-        existingGroupNames = [group.name for group in groupsList]
-        while name.lower() in existingGroupNames:
-            print("That group name is already in use.")
-            name = getValidName("Please choose a new name: ")
-        newGroup = ExpenseGroup(name, groupsList, userList)
-        if newGroup in groupsList:
-            return newGroup
-        else:
-            if not groupsList:
-                print("You must create a group to start tracking expenses. Please create an expense group.")
-            else:
-                completed = True
-
-def showAllGroups(groupList):
-    print("\nExisting expense groups:")
-    for group in groupList:
-        print("  " + str(group))
-
-def showCurrentGroup(group):
-    print("\nYou are working with the following expense group:")
-    print("  " + str(group))
-
-def chooseGroup(groupList):
-    invalid = True
-    while invalid:
-        choice = input("\nWhich expense group would you like to work with?: ").lower()
-        for group in groupList:
-            if group.name == choice:
-                return group
-        print("Sorry, that group name does not exist.")
+TRACKER_FUNCTIONS = ("Add group member(s).", "Add an expense.",
+                     "Print a report of all expenses.",
+                     "Show all balances", "Record a payment.",
+                     "See all groups.", "Exit.")
 
 def chooseFunction(functions):
+    """
+    Asks the user which expense tracker function they would like to
+    perform. Prompts user to enter the number of the function and
+    validates that response is a number within the allowed range.
+    :param functions: list of strings representing tracker functions
+    that the user can choose from.
+    :return: string from list of available functions representing the
+    user's choice.
+    """
     invalid = True
-    trackerOptions = "\nWhat would you like to do? Please enter a number from the following options:\n"
+    trackerOptions = ("\nWhat would you like to do? Please enter a "
+                      "number from the following options:\n")
     for i in range(len(functions)):
         trackerOptions += f"{i+1}. {functions[i]}\n"
     trackerOptions += "Response: "
@@ -111,81 +48,83 @@ def chooseFunction(functions):
 
     return functions[userChoice]
 
-def addExpense(expenseGroup, userList):
-    print("")
-    date = getValidDate("Please enter the expense date (MM/DD/YYY): ")
-    name = getValidName("Please enter the expense description: ")
-    amount = getValidDollarAmt("Please enter the expense amount: ")
-    payerName = getValidName("Who paid?: ")
-    payer = expenseGroup.checkForExistingMember(payerName, userList)
-    newExpense = Expense(date, name, amount, payer, expenseGroup, userList)
-    print("The following expense was created:")
-    print("  " + str(newExpense))
-
-def printExpenses(expenseGroup):
-    print(f"\nDisplaying all expenses for: {expenseGroup.name.title()}")
-    for expense in expenseGroup.expenses:
-        print("  " + str(expense))
-
-def printBalances(expenseGroup):
-    print(f"\nDisplaying all balances for: {expenseGroup.name.title()}")
-    for debt in expenseGroup.debts:
-        print("  " + str(debt))
-
-
-
 def main():
 
     # Print intro
     print(intro)
 
+    # Initialize expense tracker - create first expense group
+    t = Tracker()
+
     # Create a group
     running = True
-    allUsers = []
-    groups = []
     while running:
-        if not groups:
-            print("You do not have any expense groups. Please create one to start tracking expenses.")
-            getGroup = addGroup(groups, allUsers)
-            if getGroup != None:
-                currentGroup = getGroup
 
+        # Show existing expense groups
+        t.showAllGroups()
+
+        # Prompt user to either choose existing group or create new one.
+        invalid = True
+        while invalid:
+            option = input("\nWhat would you like to do:"
+                           "\n1. Choose existing group."
+                           "\n2. Create a new group."
+                           "\nResponse: ").strip(" .#")
+
+            if option == "1":
+                t.currentGroup = t.chooseGroup()
+                invalid = False
+            elif option == "2":
+                t.addGroup()
+                t.showAllGroups()
+            else:
+                print("Invalid choice. Please type the number of "
+                      "one of the options.")
+
+        # Will occur when user chooses "Show all groups"
         else:
-            showAllGroups(groups)
+            showAllGroups()
             invalid = True
             while invalid:
-                option = input("\nWhat would you like to do:\n1. Choose existing group.\n2. Create a new group.\nResponse: ")
-                if option == "1":
-                    currentGroup = chooseGroup(groups)
-                    invalid = False
-                elif option == "2":
-                    newGroup = addGroup(groups, allUsers)
-                    if newGroup:
-                        currentGroup = newGroup
-                    showAllGroups(groups)
-                else:
-                    print("Invalid choice. Please type the number of one of the options.")
 
-        showCurrentGroup(currentGroup)
+
+        # After creating first group or choosing a group to work
+        # with, display current group.
+        currentGroup.showCurrentGroup()
+
+        # Loop will continue to ask user what function they would
+        # like to perform unless they choose "Show all groups" or
+        # "Exit."
         groupChosen = True
         while groupChosen:
             choice = chooseFunction(TRACKER_FUNCTIONS)
-            if choice == "Add group member(s).":
-                print("")
-                currentGroup.addGroupMembers(allUsers)
-                print("The following expense group has been updated:")
-                print("  " + str(currentGroup))
-            elif choice == "Add an expense.":
-                addExpense(currentGroup, allUsers)
-            elif choice == "Print a report of all expenses.":
-                printExpenses(currentGroup)
-            elif choice == "Show all balances":
-                printBalances(currentGroup)
-            elif choice == "Record a payment.":
+
+            # "Add group member(s)."
+            if choice == TRACKER_FUNCTIONS[0]:
+                currentGroup.addGroupMembers()
+
+            # "Add an expense."
+            elif choice == TRACKER_FUNCTIONS[1]:
+                currentGroup.addExpense()
+
+            # "Print a report of all expenses."
+            elif choice == TRACKER_FUNCTIONS[2]:
+                currentGroup.printExpenses()
+
+            # "Show all balances"
+            elif choice == TRACKER_FUNCTIONS[3]:
+                currentGroup.printBalances()
+
+            # "Record a payment."
+            elif choice == TRACKER_FUNCTIONS[4]:
                 currentGroup.recordPayment()
-            elif choice == "See all groups.":
+
+            # "See all groups."
+            elif choice == TRACKER_FUNCTIONS[5]:
                 groupChosen = False
-            elif choice == "Exit.":
+
+            # "Exit."
+            elif choice == TRACKER_FUNCTIONS[6]:
                 groupChosen = False
                 running = False
 
