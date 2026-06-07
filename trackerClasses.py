@@ -1,4 +1,5 @@
 from datetime import datetime
+import math
 
 # ---------------------------Data Validation---------------------------
 
@@ -52,23 +53,28 @@ def getValidDate(prompt):
 def getValidDollarAmt(prompt):
     """
     Gets a valid dollar amount from the user. Will strip any leading
-    dollar sign, spaces, or 0's and round entry to 2 decimal places.
+    dollar sign, spaces, or 0's and ensure entry contains only 2
+    decimal places.
     :param prompt: string, prompt used to get input
-    :return: float, rounded to two decimal places
+    :return: float with no more than 2 decimal places
     """
     invalid = True
     while invalid:
         amount = input(prompt).lstrip(" $").replace(',', '')
         try:
             amount = float(amount)
-            if amount > 0:
+            truncAmt = math.trunc(amount * 100) / 100
+            if amount - truncAmt != 0:
+                print("Invalid response. Dollar amount cannot contain "
+                      "more than 2 decimal places. ", end="")
+            elif amount > 0:
                 invalid = False
             else:
                 print("Invalid response. Amount must be a positive "
                       "value. ", end="")
         except ValueError:
             print("Invalid characters entered. ", end="")
-    return round(amount, 2)
+    return amount
 
 # -----------------------Expense Group Management----------------------
 
@@ -306,6 +312,7 @@ class ExpenseGroup:
             for debt in self.debts:
                 if (debt.creditor == payee and debt.debtor == payer
                         and debt.amount > 0):
+                    debtOfInterest = debt
                     invalidTransaction = False
         if invalidTransaction:
             print(f"Invalid payment. {payer} does not owe {payee} "
@@ -318,13 +325,15 @@ class ExpenseGroup:
                     if (debt.creditor == payee and debt.debtor == payer
                             and payment <= debt.amount):
                         validAmount = True
-                        debt.amount -= payment
+                        debt.amount = round((debt.amount - payment), 2)
                         if debt.amount == 0:
                             self.debts.remove(debt)
                 if not validAmount:
                     print("That is not a valid amount. Amount paid"
-                          " cannot be greater than amount owed. Please"
-                          " try again.")
+                          " cannot be greater than amount owed.")
+                    print(f"{str(debtOfInterest.debtor).title()} owes "
+                          f"{str(debtOfInterest.creditor).title()} $"
+                          f"{debtOfInterest.amount}.")
             newPayment = Payment(date, payer, payee, payment, self)
             print(f"The following payment was recorded:\n"
                   f"  {newPayment}")
@@ -390,7 +399,7 @@ class Expense:
                 for debt in expenseGroup.debts:
                     if (debt.creditor == self.payer
                             and debt.debtor == participant):
-                        debt.amount += share
+                        debt.amount = round((debt.amount + share),2)
                         newBalance = False
                 if newBalance:
                     Debt(self.payer, participant, share, expenseGroup)
@@ -425,7 +434,7 @@ class Expense:
         for pair in alterDebts:
             debt = pair[0]
             amt = pair[1]
-            debt.amount -= amt
+            debt.amount = round((debt.amount - amt), 2)
 
 class Debt:
     """
@@ -439,7 +448,7 @@ class Debt:
 
     def __str__(self):
         return (f"{self.debtor} owes {self.creditor} "
-                f"${round(self.amount, 2)}.")
+                f"${self.amount}.")
 
 class Payment:
     """
